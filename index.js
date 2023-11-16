@@ -91,6 +91,13 @@ app.put("/users/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const newData = req.body;
+    const file = req.file;
+
+    // Jika ada file yang diunggah, update path gambar profil ke dalam data pengguna
+    if (file) {
+      newData.profilePicture = `/asset/img/${file.filename}`;
+    }
+
     await usersRef.child(userId).update(newData);
     return res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
