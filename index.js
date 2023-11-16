@@ -2,6 +2,10 @@ const express = require("express");
 const admin = require("firebase-admin");
 const serviceAccount = require("./key/serviceAccountKey.json");
 
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+
 const app = express();
 app.use(express.json());
 
@@ -15,26 +19,48 @@ admin.initializeApp({
 const db = admin.database();
 const usersRef = db.ref("users");
 
+// Multer Config
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, 'asset', 'img'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${file.fieldname}_${Date.now()}.${file.originalname.split('.').pop()}`);
+  }
+});
+
+const upload = multer({ storage: storage });
+
 // CREATE - Add a new user
-app.post('/users', async (req, res) => {
+app.post('/users', upload.single('profilePicture'), async (req, res) => {
   try {
     const { firstName, lastName, username } = req.body;
+    const file = req.file;
+
     if (!firstName || !lastName || !username) {
       return res.status(400).json({ message: 'Missing fields' });
     }
 
-    // Cek keunikan username sebelum menambahkan pengguna
+    // Check if username exist
     const usernameExists = await checkUsernameExists(username);
     if (usernameExists) {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
     const newUserRef = usersRef.push();
-    await newUserRef.set({
+    const user = {
       firstName: firstName,
       lastName: lastName,
       username: username,
-    });
+    };
+
+    // Check if file exist
+    if (file) {
+      const imagePath = `/asset/img/${file.filename}`;
+      user.profilePicture = imagePath;
+    }
+
+    await newUserRef.set(user);
 
     return res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
