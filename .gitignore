@@ -1,0 +1,21 @@
+# Node.js directories
+node_modules/
+
+# Log files
+*.log
+
+# Local configuration
+.env
+
+# Temporary files
+.DS_Store
+Thumbs.db
+
+# Build or compiled files
+dist/
+build/
+out/
+
+# Generated dependency or configuration files
+yarn-error.log
+.pnp.*
