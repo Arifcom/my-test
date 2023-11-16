@@ -16,11 +16,17 @@ const db = admin.database();
 const usersRef = db.ref("users");
 
 // CREATE - Add a new user
-app.post("/users", async (req, res) => {
+app.post('/users', async (req, res) => {
   try {
     const { firstName, lastName, username } = req.body;
     if (!firstName || !lastName || !username) {
-      return res.status(400).json({ message: "Missing fields" });
+      return res.status(400).json({ message: 'Missing fields' });
+    }
+
+    // Cek keunikan username sebelum menambahkan pengguna
+    const usernameExists = await checkUsernameExists(username);
+    if (usernameExists) {
+      return res.status(400).json({ message: 'Username already exists' });
     }
 
     const newUserRef = usersRef.push();
@@ -30,11 +36,12 @@ app.post("/users", async (req, res) => {
       username: username,
     });
 
-    return res.status(201).json({ message: "User created successfully" });
+    return res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    return res.status(500).json({ message: "Error creating user", error: error });
+    return res.status(500).json({ message: 'Error creating user', error: error });
   }
 });
+
 
 // READ - Get all users
 app.get("/users", async (req, res) => {
@@ -75,6 +82,16 @@ app.delete("/users/:userId", async (req, res) => {
     return res.status(500).json({ message: "Error deleting user", error: error });
   }
 });
+
+// Check username
+async function checkUsernameExists(username) {
+  try {
+    const snapshot = await usersRef.orderByChild('username').equalTo(username).once('value');
+    return snapshot.exists();
+  } catch (error) {
+    throw error;
+  }
+}
 
 // Jalankan server
 const port = 3000;
